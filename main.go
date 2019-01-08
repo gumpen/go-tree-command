@@ -1,106 +1,49 @@
-// package main
-
-// import (
-// 	"flag"
-// 	"fmt"
-// 	"os"
-// 	"path/filepath"
-// 	"strings"
-// )
-
-// func main() {
-// 	flag.Parse()
-// 	args := flag.Args()
-// 	fmt.Println(args[0])
-// 	dir := filepath.Dir(args[0])
-// 	fmt.Printf("%#v\n", dir)
-
-// 	// tree(args[0], 0)
-// 	// dir, err := os.Open(args[0])
-// 	// if err != nil {
-// 	// 	panic(err)
-// 	// }
-// 	// fileInfos, err := dir.Readdir(-1)
-// 	// if err != nil {
-// 	// 	panic(err)
-// 	// }
-// 	// fmt.Println(".")
-// 	// for i, fileInfo := range fileInfos {
-// 	// 	pre_ruled_line := ""
-// 	// 	if i == len(fileInfos)-1 {
-// 	// 		pre_ruled_line = "└"
-// 	// 	} else {
-// 	// 		pre_ruled_line = "├"
-// 	// 	}
-// 	// 	fmt.Println(pre_ruled_line + fileInfo.Name())
-// 	// }
-// }
-
-// func tree(filepath string, depth int) error {
-// 	// 再帰したい
-// 	dir, err := os.Open(filepath)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	fileInfos, err := dir.Readdir(-1)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-
-// 	for i, fileInfo := range fileInfos {
-// 		preRuledLine := ""
-// 		if i == len(fileInfos)-1 {
-// 			preRuledLine = "└"
-// 		} else {
-// 			preRuledLine = "├"
-// 		}
-// 		fmt.Println(strings.Repeat("|", depth) + preRuledLine + fileInfo.Name())
-// 		if fileInfo.IsDir() {
-// 			tree(fileInfo, depth+1)
-// 		}
-// 	}
-
-// 	return nil
-// }
-
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
-	"syscall"
+	"sort"
+	"strings"
 )
 
 func main() {
+	flag.Parse()
+	args := flag.Args()
 
-	// 再帰なし
-	files, _ := filepath.Glob("./*")
-	for _, f := range files {
-		printPathAndSize(f)
+	rootPath := args[0]
+	fmt.Println(rootPath)
+	tree(rootPath, 0)
+}
+
+func tree(filePath string, depth int) error {
+	dir, err := os.Open(filePath)
+	if err != nil {
+		panic(err)
+	}
+	fileInfos, err := dir.Readdir(-1)
+	if err != nil {
+		panic(err)
 	}
 
-	fmt.Println("---------")
+	sort.Slice(fileInfos, func(i, j int) bool {
+		return fileInfos[i].Name() < fileInfos[j].Name()
+	})
 
-	// 再帰あり
-	filepath.Walk("./example/", visit)
+	for i, fileInfo := range fileInfos {
+		preRuledLine := ""
+		if i == len(fileInfos)-1 {
+			preRuledLine = "└── "
+		} else {
+			preRuledLine = "├── "
+		}
+		fmt.Println(strings.Repeat("│   ", depth) + preRuledLine + fileInfo.Name())
+		if fileInfo.IsDir() {
+			tree(filepath.Join(filePath, fileInfo.Name()), depth+1)
+		}
+	}
 
-}
-
-func visit(path string, info os.FileInfo, err error) error {
-
-	printPathAndSize(path)
 	return nil
-}
-
-func printPathAndSize(path string) {
-	// ファイルサイズの取得
-	var s syscall.Stat_t
-	syscall.Stat(path, &s)
-
-	fmt.Print(path)
-	fmt.Print(": ")
-	fmt.Print(s.Size)
-	fmt.Println(" bytes")
-
 }
