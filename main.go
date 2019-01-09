@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 )
 
 func main() {
@@ -15,10 +14,10 @@ func main() {
 
 	rootPath := args[0]
 	fmt.Println(rootPath)
-	tree(rootPath, 0)
+	tree(rootPath, 0, "")
 }
 
-func tree(filePath string, depth int) error {
+func tree(filePath string, depth int, ancestralRuledLine string) error {
 	dir, err := os.Open(filePath)
 	if err != nil {
 		panic(err)
@@ -39,9 +38,13 @@ func tree(filePath string, depth int) error {
 		} else {
 			preRuledLine = "├── "
 		}
-		fmt.Println(strings.Repeat("│   ", depth) + preRuledLine + fileInfo.Name())
+		fmt.Println(ancestralRuledLine + preRuledLine + fileInfo.Name())
 		if fileInfo.IsDir() {
-			tree(filepath.Join(filePath, fileInfo.Name()), depth+1)
+			if i == len(fileInfos)-1 {
+				tree(filepath.Join(filePath, fileInfo.Name()), depth+1, ancestralRuledLine+"    ")
+			} else {
+				tree(filepath.Join(filePath, fileInfo.Name()), depth+1, ancestralRuledLine+"│   ")
+			}
 		}
 	}
 
