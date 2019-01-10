@@ -6,18 +6,25 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 )
 
+type flags struct {
+	a *bool
+}
+
 func main() {
+	var flags flags
+	flags.a = flag.Bool("a", false, "show dot prefix files")
 	flag.Parse()
 	args := flag.Args()
 
 	rootPath := args[0]
 	fmt.Println(rootPath)
-	tree(rootPath, 0, "")
+	tree(rootPath, 0, "", flags)
 }
 
-func tree(filePath string, depth int, ancestralRuledLine string) error {
+func tree(filePath string, depth int, ancestralRuledLine string, flags flags) error {
 	dir, err := os.Open(filePath)
 	if err != nil {
 		panic(err)
@@ -25,6 +32,16 @@ func tree(filePath string, depth int, ancestralRuledLine string) error {
 	fileInfos, err := dir.Readdir(-1)
 	if err != nil {
 		panic(err)
+	}
+
+	if !(*flags.a) {
+		fileInfosExcluded := make([]os.FileInfo, 0, len(fileInfos))
+		for _, fileInfo := range fileInfos {
+			if !strings.HasPrefix(fileInfo.Name(), ".") {
+				fileInfosExcluded = append(fileInfosExcluded, fileInfo)
+			}
+		}
+		fileInfos = fileInfosExcluded
 	}
 
 	sort.Slice(fileInfos, func(i, j int) bool {
@@ -41,9 +58,9 @@ func tree(filePath string, depth int, ancestralRuledLine string) error {
 		fmt.Println(ancestralRuledLine + preRuledLine + fileInfo.Name())
 		if fileInfo.IsDir() {
 			if i == len(fileInfos)-1 {
-				tree(filepath.Join(filePath, fileInfo.Name()), depth+1, ancestralRuledLine+"    ")
+				tree(filepath.Join(filePath, fileInfo.Name()), depth+1, ancestralRuledLine+"    ", flags)
 			} else {
-				tree(filepath.Join(filePath, fileInfo.Name()), depth+1, ancestralRuledLine+"│   ")
+				tree(filepath.Join(filePath, fileInfo.Name()), depth+1, ancestralRuledLine+"│   ", flags)
 			}
 		}
 	}
