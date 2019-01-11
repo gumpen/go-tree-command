@@ -11,11 +11,13 @@ import (
 
 type flags struct {
 	a *bool
+	d *bool
 }
 
 func main() {
 	var flags flags
 	flags.a = flag.Bool("a", false, "show dot prefix files")
+	flags.d = flag.Bool("d", false, "show dir only")
 	flag.Parse()
 	args := flag.Args()
 
@@ -42,6 +44,16 @@ func tree(filePath string, depth int, ancestralRuledLine string, flags flags) er
 			}
 		}
 		fileInfos = fileInfosExcluded
+	}
+
+	if *flags.d {
+		fileInfosOnlyDir := make([]os.FileInfo, 0, len(fileInfos))
+		for _, fileInfo := range fileInfos {
+			if fileInfo.IsDir() {
+				fileInfosOnlyDir = append(fileInfosOnlyDir, fileInfo)
+			}
+		}
+		fileInfos = fileInfosOnlyDir
 	}
 
 	sort.Slice(fileInfos, func(i, j int) bool {
